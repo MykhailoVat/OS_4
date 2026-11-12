@@ -101,7 +101,7 @@ def main() -> int:
     try:
         while True:
             if interactive:
-                print("fs> ", end="", flush=True)
+                print("mike_fs> ", end="", flush=True)
             line = stream.readline()
             if not line:
                 break

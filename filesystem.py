@@ -17,7 +17,7 @@ def nonnegative(value: int, label: str) -> None:
 @dataclass
 class Inode:
     number: int
-    kind: str = "regular"
+    type: str = "regular"
     links: int = 0
     size: int = 0
     # Ключ — логічний номер блоку; відсутній ключ означає нульовий блок.
@@ -75,13 +75,13 @@ class MemoryFileSystem:
         inode = self.inodes[0] if name == "/" else self.lookup(name)
         return {
             "inode": inode.number,
-            "type": inode.kind,
+            "type": inode.type,
             "links": inode.links,
             "size": inode.size,
             "block_size": BLOCK_SIZE,
             "allocated_blocks": len(inode.blocks),
             "block_map": sorted(inode.blocks),
-            **({"entries": len(self.directory)} if inode.kind == "directory" else {}),
+            **({"entries": len(self.directory)} if inode.type == "directory" else {}),
         }
 
     def link(self, source: str, target: str) -> None:
@@ -99,7 +99,7 @@ class MemoryFileSystem:
     def reclaim(self, number: int) -> None:
         """Ядро викликає це тільки за відсутності відкритих файлів."""
         inode = self.inodes[number]
-        if inode.kind == "regular" and inode.links == 0:
+        if inode.type == "regular" and inode.links == 0:
             inode.blocks.clear()
             del self.inodes[number]
 
