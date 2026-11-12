@@ -6,9 +6,9 @@ import io
 import random
 import unittest
 
-from filesystem import BLOCK_SIZE, FileSystemError
-from kernel import Kernel
-from main import execute
+from mfs.filesystem import BLOCK_SIZE, FileSystemError
+from mfs.kernel import Kernel
+from mfs.main import execute
 
 
 class FileSystemTests(unittest.TestCase):
