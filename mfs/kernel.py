@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass
 
-from filesystem import FileSystemError, MemoryFileSystem, nonnegative
+from mfs.filesystem import FileSystemError, MemoryFileSystem, nonnegative
 
 @dataclass
 class OpenFile:

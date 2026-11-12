@@ -6,8 +6,8 @@ import json
 import shlex
 import sys
 
-from filesystem import FileSystemError, nonnegative
-from kernel import Kernel
+from mfs.filesystem import FileSystemError, nonnegative
+from mfs.kernel import Kernel
 
 
 HELP = """create name             створити файл
