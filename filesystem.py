@@ -3,14 +3,11 @@
 
 from dataclasses import dataclass, field
 
-
 BLOCK_SIZE = 256
 MAX_NAME_BYTES = 255
 
-
 class FileSystemError(Exception):
     """Помилка операції файлової системи."""
-
 
 def nonnegative(value: int, label: str) -> None:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:

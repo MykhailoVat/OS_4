@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 from filesystem import FileSystemError, MemoryFileSystem, nonnegative
 
-
 @dataclass
 class OpenFile:
     inode: int
