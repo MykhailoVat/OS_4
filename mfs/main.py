@@ -1,6 +1,5 @@
 # main.py
 """Interactive filesystem shell."""
-from time import process_time
 
 import json
 import shlex
@@ -57,7 +56,7 @@ def execute(kernel: Kernel, line: str) -> bool:
                 raise FileSystemError(f"Expected {size} bytes, got {len(data)}")
         print(f"written={kernel.write(fd, data)}")
     elif command == "link":
-        kernel.link(*args)
+        kernel.link(args[0], args[1])
         print("OK")
     elif command == "unlink":
         kernel.unlink(args[0])
