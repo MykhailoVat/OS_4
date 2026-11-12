@@ -1,0 +1,44 @@
+# demo.txt
+# All required commands for the in-memory filesystem variant.
+create notes
+stat notes
+ls
+open notes
+write 0 5 hello
+seek 0 0
+read 0 5
+link notes copy
+stat copy
+ls
+# The second open file descriptor has an independent offset.
+open copy
+read 1 2
+# Extending the file does not allocate zero blocks.
+truncate copy 1024
+stat notes
+seek 0 510
+write 0 4 DATA
+seek 0 508
+read 0 8
+# Truncated data does not reappear when the file is extended.
+truncate notes 3
+truncate notes 8
+seek 0 0
+read 0 8
+# The file remains accessible through fd after both names are removed.
+unlink notes
+unlink copy
+ls
+seek 0 0
+read 0 8
+write 0 1 !
+close 0
+# The smallest free fd is 0 again; the old file is still open through fd=1.
+create fresh
+open fresh
+close 1
+close 0
+unlink fresh
+ls
+stat /
+exit

@@ -1,4 +1,5 @@
-"""Перевірка семантики ФС, розріджених файлів та консольних команд."""
+# test_filesystem.py
+"""Tests for filesystem semantics, sparse files, and shell commands."""
 
 import random
 

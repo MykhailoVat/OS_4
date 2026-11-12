@@ -1,4 +1,5 @@
-"""Запуск оболонки командою python -m mfs."""
+# __main__.py
+"""Run the shell with python -m mfs."""
 
 from .main import main
 

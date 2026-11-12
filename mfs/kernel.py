@@ -1,5 +1,5 @@
 # kernel.py
-"""Частина підсистеми ядра: відкриті файли, зміщення та час життя inode."""
+"""Kernel subsystem: open files, offsets, and inode lifetime."""
 
 from dataclasses import dataclass
 
@@ -19,7 +19,7 @@ class Kernel:
     def _opened(self, fd: int) -> OpenFile:
         nonnegative(fd, "fd")
         if fd not in self.open_files:
-            raise FileSystemError(f"Дескриптор fd={fd} не відкритий")
+            raise FileSystemError(f"File descriptor fd={fd} is not open")
         return self.open_files[fd]
 
     def _reclaim(self, number: int) -> None:
@@ -50,13 +50,13 @@ class Kernel:
 
     def seek(self, fd: int, offset: int) -> None:
         opened = self._opened(fd)
-        nonnegative(offset, "Зміщення")
+        nonnegative(offset, "Offset")
         opened.offset = offset
 
     def read(self, fd: int, size: int) -> bytes:
         opened = self._opened(fd)
         data = self.fs.read(opened.inode, opened.offset, size)
-        # За умовою завдання зміщення збільшується саме на запитане size.
+        # The assignment requires advancing the offset by the requested size.
         opened.offset += size
         return data
 

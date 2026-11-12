@@ -1,102 +1,105 @@
 <!-- README.md -->
-# Лабораторна робота №4: файлова система
+# Laboratory assignment 4: filesystem
 
-Реалізація на Python варіанта **з носієм в оперативній пам'яті**, дозволеного
-в `task-4_ukr.pdf`. Бітова карта, фіксовані ліміти блоків та inode і команда
-`mkfs` не потрібні. ФС створюється автоматично під час запуску; після виходу
-дані зникають. FUSE, реальна ФС для зберігання даних і сторонні бібліотеки
-не використовуються. Потрібен Python 3.10 або новіший; для тестів — pytest.
+A Python implementation of the **in-memory storage** variant allowed by
+`task-4_ukr.pdf`. This variant requires no bitmap, fixed block or inode limits,
+or `mkfs` command. The filesystem is initialized at startup; its data is lost
+when the program exits. It uses no FUSE, backing files, or third-party runtime
+libraries. Requires Python 3.10 or later; tests require pytest.
 
-## Запуск
+## Running
 
 ```bash
 python -m mfs
-python -m mfs mfs/demo.txt
+python -m mfs mfs/opt/demo.txt
 pytest -v
 ```
 
-У консолі `help` показує синтаксис. Також команди можна передавати через stdin.
-Усі операції доступні як методи `Kernel` для безпосередніх викликів із Python.
-Помилки виводяться українською; оболонка продовжує роботу, а процес повертає
-код 1, якщо сталася помилка. Звичайне завершення повертає 0.
+Type `help` in the shell to see the syntax. Commands can also be supplied through
+stdin. All operations are available as `Kernel` methods for direct Python calls.
+Errors are displayed in English. The shell continues after an error, and the
+process returns exit code 1 if any error occurred. Normal completion returns 0.
 
-## Організація програми та формати
+## Program structure and data formats
 
-- `mfs/filesystem.py` — драйвер: inode, директорія, блокове читання та запис,
-  жорсткі посилання, зміна розміру й звільнення даних.
-- `mfs/kernel.py` — підсистема ядра: таблиця відкритих файлів, вибір найменшого
-  вільного fd, незалежні зміщення, звільнення inode після останнього закриття.
-- `mfs/main.py` — консольний інтерфейс.
-- `tests/test_filesystem.py` — автоматичні тести.
-- `mfs/demo.txt` — сценарій з прикладами всіх команд із завдання для цього варіанта.
+- `mfs/filesystem.py` — driver: inodes, directory, block reads and writes,
+  hard links, resizing, and data reclamation.
+- `mfs/kernel.py` — kernel subsystem: open file table, smallest available fd
+  selection, independent offsets, and inode reclamation after the last close.
+- `mfs/main.py` — command-line interface.
+- `mfs/opt/help_txt.py` — command help text.
+- `tests/test_filesystem.py` — automated tests.
+- `mfs/opt/demo.txt` — examples of every required command for this variant.
 
-Дескриптор ФС (`Inode`) містить номер, тип (`regular` або `directory`), кількість
-жорстких посилань, розмір у байтах і словник блоків. Звичайні файли складаються
-з блоків по **256 байтів**. Ключ словника — логічний номер блоку у файлі;
-значення — рівно 256 байтів. Відсутній ключ означає блок із нулів. Отже,
-`truncate` може збільшити файл до великого розміру без виділення блоків.
-Запис повністю нульового блоку теж не займає місця. Останній блок доповнюється
-нулями, але читання обмежено логічним розміром файлу.
+A filesystem descriptor (`Inode`) contains its number, type (`regular` or
+`directory`), hard link count, size in bytes, and a block dictionary. Regular
+files consist of **256-byte blocks**. Dictionary keys are logical block numbers
+within the file; each value contains exactly 256 bytes. A missing key represents
+a zero block. Thus, `truncate` can extend a file to a large size without
+allocating blocks. Writing an entirely zero block does not consume block storage
+either. The last block is padded with zeros, but reads stop at the logical EOF.
 
-Замість прямих і непрямого посилань використовується словник — саме таку заміну
-дозволяє умова для носія в пам'яті. Глобальних фізичних номерів блоків немає;
-`stat` виводить у `block_map` логічні номери реально виділених блоків.
+The dictionary replaces direct and indirect pointers, as permitted by the
+assignment for in-memory storage. There are no global physical block numbers;
+`stat` reports the logical numbers of allocated blocks in `block_map`.
 
-Єдина коренева директорія має inode 0 та словник `ім'я → номер inode`.
-Видалення запису зі словника робить посилання недійсним без окремого прапорця.
-Імена — непорожні UTF-8 рядки до **255 байтів**, крім `.` і `..`, без `/` та NUL.
-Імена з пробілами беруться в лапки. `stat /` показує кореневу директорію:
-її `size` дорівнює 0, бо вона не серіалізується у блоки, а `entries` містить
-кількість записів. Inode зберігаються у словнику, їх номери зростають і не
-перевикористовуються. Довільних обмежень на їх кількість немає.
+The single root directory has inode 0 and a dictionary mapping names to inode
+numbers. Removing a dictionary entry invalidates its hard link without a
+separate flag. Names are nonempty UTF-8 strings of up to **255 bytes**, excluding
+`.` and `..`, and cannot contain `/` or NUL. Quote names containing spaces.
+`stat /` shows the root directory: its `size` is 0 because it is not serialized
+into blocks, while `entries` contains the entry count. Inodes are stored in a
+dictionary; their numbers increase and are never reused. There is no fixed limit
+on their count.
 
-Числовий **fd** належить таблиці ядра й відрізняється від номера **inode**.
-Кожен `open` створює окремий запис `{inode, offset=0}`. Видалення останнього
-імені не заважає читати та записувати файл через відкриті fd. Дані звільняються,
-коли одночасно немає жорстких посилань і відкритих fd. Усі операції над
-життєвим циклом файлів слід виконувати через `Kernel`.
+A numeric **fd** belongs to the kernel table and differs from an **inode** number.
+Each `open` creates a separate record `{inode, offset=0}`. Removing the last name
+does not prevent reads and writes through open descriptors. Data is reclaimed
+when neither hard links nor open descriptors remain. Perform all file lifetime
+operations through `Kernel`.
 
-## Команди та прийняті домовленості
+## Commands and conventions
 
-| Команда | Дія |
+| Command | Action |
 | --- | --- |
-| `create name` | Створити порожній файл та його ім'я |
-| `stat name` | Показати дані inode та карту виділених блоків |
-| `ls` | Показати жорсткі посилання з номерами inode |
-| `open name` | Відкрити файл; вивести `fd=N` |
-| `close fd` | Закрити fd та звільнити його номер |
-| `seek fd offset` | Установити абсолютне невід'ємне зміщення |
-| `read fd size` | Прочитати до size байтів, максимум до кінця файлу |
-| `write fd size [text]` | Записати size байтів; без тексту записуються байти `x` |
-| `link name1 name2` | Створити ще одне ім'я того самого inode |
-| `unlink name` | Видалити жорстке посилання |
-| `truncate name size` | Змінити розмір; нова область читається як нулі |
+| `create name` | Create an empty file and its name |
+| `stat name` | Show inode information and allocated block map |
+| `ls` | List hard links with inode numbers |
+| `open name` | Open a file and print `fd=N` |
+| `close fd` | Close a descriptor and release its number |
+| `seek fd offset` | Set an absolute nonnegative offset |
+| `read fd size` | Read up to size bytes, stopping at EOF |
+| `write fd size [text]` | Write size bytes; without text, write bytes of `x` |
+| `link name1 name2` | Create another name for the same inode |
+| `unlink name` | Remove a hard link |
+| `truncate name size` | Resize a file; the new region reads as zeros |
 
-`open name` виводить число, яке потрібно підставляти в наступні команди:
-позначення `fd = open name` з PDF не є синтаксисом присвоєння в оболонці.
+`open name` prints the number to use in subsequent commands. The PDF's
+`fd = open name` notation is not assignment syntax supported by the shell.
 
-Для `write` з текстом кількість **байтів UTF-8** повинна точно збігатися із
-`size`. Наприклад, `write 0 8 "тест"`. Додаткова команда `writehex 0 410042`
-записує довільні байти, включно з NUL. У Python це `kernel.write(fd, b"A\x00B")`.
-`read` виводить представлення `bytes`, тому нулі видно як `\x00`.
+For text writes, the **UTF-8 byte count** must equal `size`. For example,
+`write 0 4 "test"`. The additional command `writehex 0 410042` writes arbitrary
+bytes, including NUL. In Python, use `kernel.write(fd, b"A\x00B")`.
+`read` displays a `bytes` representation, so zeros appear as `\x00`.
 
-За буквальним формулюванням PDF, `read fd size` збільшує зміщення на запитане
-`size`, навіть при короткому читанні наприкінці файлу. Читання за кінцем повертає
-`b''`. Запис збільшує зміщення на кількість записаних байтів. `seek` за кінець
-дозволено; наступний запис створює нульовий проміжок. Запис нульової довжини
-не збільшує файл. `truncate` не змінює зміщення відкритих fd.
+Following the literal wording of the PDF, `read fd size` advances the offset by
+the requested `size`, even for a short read at EOF. Reading beyond EOF returns
+`b''`. Writing advances the offset by the number of bytes written. Seeking past
+EOF is allowed; a subsequent write creates a zero-filled gap. A zero-length
+write does not extend the file. `truncate` does not change open file offsets.
 
-## Приклади та перевірка
+## Examples and verification
 
-Запуск `python -m mfs mfs/demo.txt` друкує кожну команду та її результат і охоплює
-всі обов'язкові операції. Наприклад, після запису `hello`, створення посилання
-`copy` і розширення до 1024 байтів `stat notes` показує `links=2`, `size=1024`,
-`allocated_blocks=1`. Читання після скорочення до 3 байтів і розширення до 8
-повертає `b'hel\x00\x00\x00\x00\x00'`. Після видалення обох імен `ls` показує
-порожню директорію, а той самий файл ще можна читати через fd.
+Running `python -m mfs mfs/opt/demo.txt` prints each command and its result,
+covering all required operations. For example, after writing `hello`, creating
+the `copy` link, and extending the file to 1024 bytes, `stat notes` reports
+`links=2`, `size=1024`, and `allocated_blocks=1`. Reading after shrinking to
+3 bytes and extending to 8 returns `b'hel\x00\x00\x00\x00\x00'`. After both
+names are removed, `ls` shows an empty directory, while the same file remains
+readable through its fd.
 
-Тести перевіряють перетин меж блоків, пропуски й нульові блоки, обрізання хвоста,
-незалежність зміщень, повторне використання fd, жорсткі посилання, час життя
-видаленого відкритого файлу, помилкові аргументи та консольні команди. Додатково
-300 операцій запису й зміни розміру порівнюються з еталонним суцільним масивом.
-Лістинг програми міститься у файлах `.py` поруч із цим описом.
+Tests cover block boundaries, sparse regions and zero blocks, truncated tails,
+independent offsets, fd reuse, hard links, unlinked open file lifetime, invalid
+arguments, and shell commands. An additional 300 write and resize operations are
+compared against a dense reference array. The program listing is in the `.py`
+files included in this directory.

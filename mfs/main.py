@@ -1,5 +1,5 @@
 # main.py
-"""Інтерактивна оболонка та виконання файлів із командами."""
+"""Interactive shell and command script execution."""
 
 import argparse
 import json
@@ -8,26 +8,9 @@ import sys
 
 from mfs.filesystem import FileSystemError, nonnegative
 from mfs.kernel import Kernel
+from mfs.opt.help_txt import HELP_TEXT
 
-
-HELP = """create name             створити файл
-stat name               показати inode (stat / — коренева директорія)
-ls                      показати імена та номери inode
-open name               відкрити файл; вивести найменший вільний fd
-close fd                закрити файл
-seek fd offset          установити абсолютне зміщення у байтах
-read fd size            прочитати байти (вивід як Python bytes)
-write fd size [text]    записати UTF-8 текст; без text — size байтів 'x'
-writehex fd hex          записати довільні байти, наприклад 41004200
-link name1 name2         створити ще одне ім'я файлу
-unlink name             видалити ім'я файлу
-truncate name size      змінити розмір файлу в байтах
-help                    показати цю довідку
-exit                    завершити роботу (дані в пам'яті зникнуть)
-Імена та текст із пробілами беріть у лапки. Коментарі починаються з #.
-"""
-
-
+# ugly but effective
 def execute(kernel: Kernel, line: str) -> bool:
     parts = shlex.split(line, comments=True)
     if not parts:
@@ -38,20 +21,20 @@ def execute(kernel: Kernel, line: str) -> bool:
                "writehex": (2,), "link": (2,), "unlink": (1,),
                "truncate": (2,), "help": (0,), "exit": (0,)}
     if command not in arities:
-        raise FileSystemError(f"Невідома команда {command!r}; введіть help")
+        raise FileSystemError(f"Unknown command {command!r}; type help")
     if len(args) not in arities[command]:
-        raise FileSystemError(f"Неправильна кількість аргументів {command}; введіть help")
+        raise FileSystemError(f"Invalid number of arguments for {command}; type help")
     if command == "exit":
         return False
     if command == "help":
-        print(HELP)
+        print(HELP_TEXT)
     elif command == "create":
         print(f"inode={kernel.create(args[0])}")
     elif command == "stat":
         print(json.dumps(kernel.stat(args[0]), ensure_ascii=False))
     elif command == "ls":
         entries = kernel.ls()
-        print("\n".join(f"{number}\t{name!r}" for name, number in entries) or "(порожньо)")
+        print("\n".join(f"{number}\t{name!r}" for name, number in entries) or "(empty)")
     elif command == "open":
         print(f"fd={kernel.open(args[0])}")
     elif command == "read":
@@ -62,10 +45,10 @@ def execute(kernel: Kernel, line: str) -> bool:
             data = bytes.fromhex(args[1])
         else:
             size = int(args[1])
-            nonnegative(size, "Розмір")
+            nonnegative(size, "Size")
             data = args[2].encode("utf-8") if len(args) == 3 else b"x" * size
             if len(data) != size:
-                raise FileSystemError(f"Очікується {size} байтів, отримано {len(data)}")
+                raise FileSystemError(f"Expected {size} bytes, got {len(data)}")
         print(f"written={kernel.write(fd, data)}")
     else:
         if command == "close":
@@ -83,8 +66,8 @@ def execute(kernel: Kernel, line: str) -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Файлова система в оперативній пам'яті")
-    parser.add_argument("script", nargs="?", help="UTF-8 файл із командами")
+    parser = argparse.ArgumentParser(description="In-memory filesystem")
+    parser.add_argument("script", nargs="?", help="UTF-8 command script")
     options = parser.parse_args()
     kernel = Kernel()
     stream = sys.stdin
@@ -92,12 +75,12 @@ def main() -> int:
         try:
             stream = open(options.script, encoding="utf-8")
         except OSError as error:
-            print(f"Помилка: {error}", file=sys.stderr)
+            print(f"Error: {error}", file=sys.stderr)
             return 1
     interactive = not options.script and sys.stdin.isatty()
     status = 0
     if interactive:
-        print("ФС у пам'яті. Введіть help для довідки.")
+        print("In-memory filesystem. Type help for available commands.")
     try:
         while True:
             if interactive:
@@ -111,7 +94,7 @@ def main() -> int:
                 if not execute(kernel, line):
                     break
             except (FileSystemError, ValueError) as error:
-                print(f"Помилка: {error}", file=sys.stderr)
+                print(f"Error: {error}", file=sys.stderr)
                 status = 1
     except KeyboardInterrupt:
         print()
