@@ -16,15 +16,18 @@ class Kernel:
         self.fs = MemoryFileSystem()
         self.open_files: dict[int, OpenFile] = {}
 
-    def _opened(self, fd: int) -> OpenFile:
+    def _find_opened(self, fd: int) -> OpenFile:
         nonnegative(fd, "fd")
         if fd not in self.open_files:
             raise FileSystemError(f"File descriptor fd={fd} is not open")
         return self.open_files[fd]
 
     def _reclaim(self, number: int) -> None:
-        if not any(item.inode == number for item in self.open_files.values()):
-            self.fs.reclaim(number)
+        for item in self.open_files.values():
+            if item.inode == number:
+                return
+
+        self.fs.reclaim(number)
 
     def create(self, name: str) -> int:
         return self.fs.create(name)
@@ -44,24 +47,24 @@ class Kernel:
         return fd
 
     def close(self, fd: int) -> None:
-        opened = self._opened(fd)
+        opened = self._find_opened(fd)
         del self.open_files[fd]
         self._reclaim(opened.inode)
 
     def seek(self, fd: int, offset: int) -> None:
-        opened = self._opened(fd)
+        opened = self._find_opened(fd)
         nonnegative(offset, "Offset")
         opened.offset = offset
 
     def read(self, fd: int, size: int) -> bytes:
-        opened = self._opened(fd)
+        opened = self._find_opened(fd)
         data = self.fs.read(opened.inode, opened.offset, size)
         # The assignment requires advancing the offset by the requested size.
         opened.offset += size
         return data
 
     def write(self, fd: int, data: bytes) -> int:
-        opened = self._opened(fd)
+        opened = self._find_opened(fd)
         count = self.fs.write(opened.inode, opened.offset, data)
         opened.offset += count
         return count
