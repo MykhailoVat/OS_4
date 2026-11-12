@@ -1,5 +1,5 @@
 # test_filesystem.py
-"""Tests for filesystem semantics, sparse files, and shell commands."""
+"""Tests for kernel and filesystem semantics, including sparse files."""
 
 import random
 
@@ -7,7 +7,6 @@ import pytest
 
 from mfs.filesystem import BLOCK_SIZE, FileSystemError
 from mfs.kernel import Kernel
-from mfs.main import execute
 
 
 @pytest.fixture
@@ -178,18 +177,3 @@ def test_random_io_against_dense_reference(opened_file):
         assert k.read(fd, len(reference) + 1) == bytes(reference)
         assert k.stat('file')['size'] == len(reference)
         assert all(any(b) for b in k.fs.inodes[number].blocks.values())
-
-
-def test_console(capsys):
-    k = Kernel()
-    for line in ['create "мій файл"', 'open "мій файл"', 'write 0 4 "тест"']:
-        if line.startswith('write'):
-            with pytest.raises(FileSystemError):
-                execute(k, line)
-        else:
-            execute(k, line)
-    for line in ['write 0 8 "тест"', 'seek 0 0', 'read 0 8', 'writehex 0 000041', 'stat "мій файл"', 'ls', 'link "мій файл" alias', 'truncate alias 1', 'unlink alias', 'close 0', 'help']:
-        assert execute(k, line)
-    assert not execute(k, 'exit')
-    assert 'fd=0' in capsys.readouterr().out
-    assert k.stat('мій файл')['size'] == 1

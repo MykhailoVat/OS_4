@@ -1,7 +1,6 @@
 # main.py
-"""Interactive shell and command script execution."""
+"""Interactive filesystem shell."""
 
-import argparse
 import json
 import shlex
 import sys
@@ -65,43 +64,19 @@ def execute(kernel: Kernel, line: str) -> bool:
     return True
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="In-memory filesystem")
-    parser.add_argument("script", nargs="?", help="UTF-8 command script")
-    options = parser.parse_args()
+def main() -> None:
     kernel = Kernel()
-    stream = sys.stdin
-    if options.script:
-        try:
-            stream = open(options.script, encoding="utf-8")
-        except OSError as error:
-            print(f"Error: {error}", file=sys.stderr)
-            return 1
-    interactive = not options.script and sys.stdin.isatty()
-    status = 0
-    if interactive:
-        print("In-memory filesystem. Type help for available commands.")
+    print("In-memory filesystem. Type help for available commands.")
     try:
         while True:
-            if interactive:
-                print("mike_fs> ", end="", flush=True)
-            line = stream.readline()
-            if not line:
-                break
-            if options.script and line.strip() and not line.lstrip().startswith("#"):
-                print(f"fs> {line.rstrip()}")
+            line = input("mike_fs> ")
             try:
                 if not execute(kernel, line):
                     break
             except (FileSystemError, ValueError) as error:
                 print(f"Error: {error}", file=sys.stderr)
-                status = 1
-    except KeyboardInterrupt:
+    except (EOFError, KeyboardInterrupt):
         print()
-    finally:
-        if options.script:
-            stream.close()
-    return status
 
 
 if __name__ == "__main__":
