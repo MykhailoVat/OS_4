@@ -32,7 +32,15 @@ class MemoryFileSystem:
     """
 
     def __init__(self) -> None:
-        self.inodes: dict[int, Inode] = {0: Inode(0, "directory", links=1)}
+        self.inodes: dict[int, Inode] = {}
+
+        root_inode = Inode(
+            number=0,
+            type="directory",
+            links=1
+        )
+        self.inodes[0] = root_inode
+
         self.directory: dict[str, int] = {}
         self._next_inode = 1
 
