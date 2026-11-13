@@ -21,10 +21,12 @@ class Inode:
     size: int = 0
     # The key is a logical block number; a missing key represents a zero block.
     blocks: dict[int, bytes] = field(default_factory=dict)
+    # Directory contents map names to inode numbers; unused for regular files.
+    entries: dict[str, int] = field(default_factory=dict)
 
 
 class MemoryFileSystem:
-    """ In-memory filesytem
+    """ In-memory filesystem
 
     The root directory has inode 0. Its entries are stored in a dictionary;
     deleting an entry removes the corresponding hard link entirely.
@@ -40,7 +42,7 @@ class MemoryFileSystem:
         )
         self.inodes[0] = root_inode
 
-        self.directory: dict[str, int] = {}
+        self.directory: dict[str, int] = root_inode.entries
         self._next_inode = 1
 
     @staticmethod
@@ -88,7 +90,7 @@ class MemoryFileSystem:
             "block_size": BLOCK_SIZE,
             "allocated_blocks": len(inode.blocks),
             "block_map": sorted(inode.blocks),
-            **({"entries": len(self.directory)} if inode.type == "directory" else {}),
+            **({"entries": len(inode.entries)} if inode.type == "directory" else {}),
         }
 
     def link(self, source: str, target: str) -> None:

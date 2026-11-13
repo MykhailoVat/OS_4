@@ -17,6 +17,28 @@ def opened_file():
     return kernel, number, fd
 
 
+def test_directory_entries_belong_to_root_inode():
+    k = Kernel()
+    root = k.fs.inodes[0]
+    assert root.type == "directory"
+    assert k.fs.directory is root.entries
+    assert root.entries == {}
+
+    number = k.create("file")
+    k.link("file", "alias")
+    assert root.entries == {"file": number, "alias": number}
+    assert k.ls() == [("alias", number), ("file", number)]
+    assert k.stat("/")["entries"] == 2
+
+    k.unlink("file")
+    assert root.entries == {"alias": number}
+    assert k.fs.lookup("alias").number == number
+    k.unlink("alias")
+    assert root.entries == {}
+    assert k.stat("/")["entries"] == 0
+    assert k.fs.directory is root.entries
+
+
 def test_smallest_fd_and_independent_offsets(opened_file):
     k, number, fd = opened_file
     second = k.open('file')
