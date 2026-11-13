@@ -3,8 +3,8 @@
 
 from dataclasses import dataclass, field
 
-BLOCK_SIZE = 256
-MAX_NAME_BYTES = 255
+BLOCK_SIZE = 16
+MAX_NAME_BYTES = 15
 
 class FileSystemError(Exception):
     """A filesystem operation error."""
@@ -125,7 +125,8 @@ class MemoryFileSystem:
         end = min(offset + size, inode.size)
         result = bytearray()
         while offset < end:
-            index, start = divmod(offset, BLOCK_SIZE)
+            index = offset // BLOCK_SIZE
+            start = offset % BLOCK_SIZE
             count = min(BLOCK_SIZE - start, end - offset)
             block = inode.blocks.get(index, bytes(BLOCK_SIZE))
             result.extend(block[start:start + count])

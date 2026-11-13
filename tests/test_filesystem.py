@@ -32,12 +32,14 @@ def test_smallest_fd_and_independent_offsets(opened_file):
 
 def test_cross_block_write_and_overwrite(opened_file):
     k, number, fd = opened_file
-    data = bytes(range(256)) * 3
+    data = bytes(index % 256 for index in range(BLOCK_SIZE * 3))
+    offset = BLOCK_SIZE - 1
+    replacement = b'XYZ'
     k.write(fd, data)
-    k.seek(fd, BLOCK_SIZE - 1)
-    k.write(fd, b'XYZ')
+    k.seek(fd, offset)
+    k.write(fd, replacement)
     k.seek(fd, 0)
-    assert k.read(fd, len(data)) == data[:255] + b'XYZ' + data[258:]
+    assert k.read(fd, len(data)) == data[:offset] + replacement + data[offset + len(replacement):]
     assert all(len(b) == BLOCK_SIZE for b in k.fs.inodes[number].blocks.values())
 
 

@@ -17,8 +17,8 @@ def execute(kernel: Kernel, line: str) -> bool:
     command, *args = parts
     arities = {"create": (1,), "stat": (1,), "ls": (0,), "open": (1,),
                "close": (1,), "seek": (2,), "read": (2,), "write": (2, 3),
-               "writehex": (2,), "link": (2,), "unlink": (1,),
-               "truncate": (2,), "help": (0,), "exit": (0,)}
+               "link": (2,), "unlink": (1,), "truncate": (2,),
+               "help": (0,), "exit": (0,)}
     if command not in arities:
         raise FileSystemError(f"Unknown command {command!r}; type help")
     if len(args) not in arities[command]:
@@ -44,16 +44,13 @@ def execute(kernel: Kernel, line: str) -> bool:
         print("OK")
     elif command == "read":
         print(repr(kernel.read(int(args[0]), int(args[1]))))
-    elif command in {"write", "writehex"}:
+    elif command == "write":
         fd = int(args[0])
-        if command == "writehex":
-            data = bytes.fromhex(args[1])
-        else:
-            size = int(args[1])
-            nonnegative(size, "Size")
-            data = args[2].encode("utf-8") if len(args) == 3 else b"x" * size
-            if len(data) != size:
-                raise FileSystemError(f"Expected {size} bytes, got {len(data)}")
+        size = int(args[1])
+        nonnegative(size, "Size")
+        data = args[2].encode("utf-8") if len(args) == 3 else b"x" * size
+        if len(data) != size:
+            raise FileSystemError(f"Expected {size} bytes, got {len(data)}")
         print(f"written={kernel.write(fd, data)}")
     elif command == "link":
         kernel.link(args[0], args[1])
