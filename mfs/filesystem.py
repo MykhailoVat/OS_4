@@ -1,12 +1,11 @@
 # filesystem.py
 
 from dataclasses import dataclass, field
+from mfs.opt.errors import FileSystemError
 
 BLOCK_SIZE = 8
 MAX_NAME_BYTES = 15
 
-class FileSystemError(Exception):
-    """A filesystem operation error."""
 
 def nonnegative(value: int, label: str) -> None:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:

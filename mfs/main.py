@@ -4,9 +4,11 @@ import json
 import shlex
 import sys
 
-from mfs.filesystem import FileSystemError, nonnegative
+from mfs.filesystem import nonnegative
 from mfs.kernel import Kernel
 from mfs.opt.help_txt import HELP_TEXT
+from mfs.opt.errors import CommandError
+
 
 # ugly but effective
 def execute(kernel: Kernel, line: str) -> bool:
@@ -19,9 +21,9 @@ def execute(kernel: Kernel, line: str) -> bool:
                "link": (2,), "unlink": (1,), "truncate": (2,),
                "help": (0,), "exit": (0,)}
     if command not in arities:
-        raise FileSystemError(f"Unknown command {command!r}; type help")
+        raise CommandError(f"Unknown command {command!r}; type help")
     if len(args) not in arities[command]:
-        raise FileSystemError(f"Invalid number of arguments for {command}; type help")
+        raise CommandError(f"Invalid number of arguments for {command}; type help")
     if command == "exit":
         return False
     if command == "help":
@@ -49,7 +51,7 @@ def execute(kernel: Kernel, line: str) -> bool:
         nonnegative(size, "Size")
         data = args[2].encode("utf-8") if len(args) == 3 else b"x" * size
         if len(data) != size:
-            raise FileSystemError(f"Expected {size} bytes, got {len(data)}")
+            raise CommandError(f"Expected {size} bytes, got {len(data)}")
         print(f"written={kernel.write(fd, data)}")
     elif command == "link":
         kernel.link(args[0], args[1])
@@ -73,7 +75,7 @@ def main() -> None:
             try:
                 if not execute(kernel, line):
                     break
-            except (FileSystemError, ValueError) as error:
+            except (CommandError, ValueError) as error:
                 print(f"Error: {error}", file=sys.stderr)
     except (EOFError, KeyboardInterrupt):
         print()
