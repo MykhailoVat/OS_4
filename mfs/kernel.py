@@ -3,7 +3,12 @@
 from dataclasses import dataclass
 
 from mfs.opt.errors import KernelError
-from mfs.filesystem import MemoryFileSystem, nonnegative
+from mfs.filesystem import MemoryFileSystem
+
+def nonnegative(value: int, label: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise KernelError(f"{label}: a nonnegative integer is required")
+
 
 @dataclass
 class OpenFile:

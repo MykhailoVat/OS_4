@@ -5,8 +5,8 @@ import random
 
 import pytest
 
-from mfs.opt.errors import KernelError
-from mfs.filesystem import BLOCK_SIZE, FileSystemError
+from mfs.opt.errors import KernelError, FileSystemError
+from mfs.filesystem import BLOCK_SIZE
 from mfs.kernel import Kernel
 
 
@@ -157,7 +157,7 @@ def test_invalid_names_preserve_state(opened_file, name):
         ("create", ("file",), FileSystemError),
         ("open", ("missing",), FileSystemError),
         ("close", (20,), KernelError),
-        ("seek", (0, -1), FileSystemError),
+        ("seek", (0, -1), KernelError),
         ("read", (0, -1), FileSystemError),
         ("truncate", ("file", -1), FileSystemError),
         ("link", ("file", "file"), FileSystemError),
