@@ -142,7 +142,8 @@ class MemoryFileSystem:
             return 0
         position = 0
         while position < len(data):
-            index, start = divmod(offset + position, BLOCK_SIZE)
+            index = (offset + position) // BLOCK_SIZE
+            start = (offset + position) % BLOCK_SIZE
             count = min(BLOCK_SIZE - start, len(data) - position)
             block = bytearray(inode.blocks.get(index, bytes(BLOCK_SIZE)))
             block[start:start + count] = data[position:position + count]
@@ -155,7 +156,8 @@ class MemoryFileSystem:
         nonnegative(size, "Size")
         inode = self.lookup(name)
         if size < inode.size:
-            last, tail = divmod(size, BLOCK_SIZE)
+            last = size // BLOCK_SIZE
+            tail = size % BLOCK_SIZE
             for index in list(inode.blocks):
                 if index > last or (index == last and tail == 0):
                     del inode.blocks[index]
