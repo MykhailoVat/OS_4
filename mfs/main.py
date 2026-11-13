@@ -4,10 +4,9 @@ import json
 import shlex
 import sys
 
-from mfs.filesystem import nonnegative
 from mfs.kernel import Kernel
 from mfs.opt.help_txt import HELP_TEXT
-from mfs.opt.errors import CommandError
+from mfs.opt.errors import CommandError, FileSystemError, KernelError
 
 
 # ugly but effective
@@ -48,7 +47,10 @@ def execute(kernel: Kernel, line: str) -> bool:
     elif command == "write":
         fd = int(args[0])
         size = int(args[1])
-        nonnegative(size, "Size")
+
+        if size < 0:
+            raise CommandError("Size must be nonnegative")
+
         data = args[2].encode("utf-8") if len(args) == 3 else b"x" * size
         if len(data) != size:
             raise CommandError(f"Expected {size} bytes, got {len(data)}")
@@ -75,7 +77,7 @@ def main() -> None:
             try:
                 if not execute(kernel, line):
                     break
-            except (CommandError, ValueError) as error:
+            except (CommandError, FileSystemError, KernelError, ValueError) as error:
                 print(f"Error: {error}", file=sys.stderr)
     except (EOFError, KeyboardInterrupt):
         print()

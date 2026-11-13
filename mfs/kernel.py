@@ -2,7 +2,8 @@
 
 from dataclasses import dataclass
 
-from mfs.filesystem import FileSystemError, MemoryFileSystem, nonnegative
+from mfs.opt.errors import KernelError
+from mfs.filesystem import MemoryFileSystem, nonnegative
 
 @dataclass
 class OpenFile:
@@ -18,7 +19,7 @@ class Kernel:
     def _find_opened(self, fd: int) -> OpenFile:
         nonnegative(fd, "fd")
         if fd not in self.open_files:
-            raise FileSystemError(f"File descriptor fd={fd} is not open")
+            raise KernelError(f"File descriptor fd={fd} is not open")
         return self.open_files[fd]
 
     def _reclaim(self, number: int) -> None:

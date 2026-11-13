@@ -5,6 +5,7 @@ import random
 
 import pytest
 
+from mfs.opt.errors import KernelError
 from mfs.filesystem import BLOCK_SIZE, FileSystemError
 from mfs.kernel import Kernel
 
@@ -128,7 +129,6 @@ def test_unopened_unlink_reclaims_immediately(opened_file):
     k.unlink('temporary')
     assert number not in k.fs.inodes
 
-
 def test_eof_and_zero_length_io(opened_file):
     k, number, fd = opened_file
     k.write(fd, b'abc')
@@ -152,21 +152,21 @@ def test_invalid_names_preserve_state(opened_file, name):
 
 
 @pytest.mark.parametrize(
-    "method, args",
+    "method, args, error_type",
     [
-        ("create", ("file",)),
-        ("open", ("missing",)),
-        ("close", (20,)),
-        ("seek", (0, -1)),
-        ("read", (0, -1)),
-        ("truncate", ("file", -1)),
-        ("link", ("file", "file")),
-        ("unlink", ("missing",)),
+        ("create", ("file",), FileSystemError),
+        ("open", ("missing",), FileSystemError),
+        ("close", (20,), KernelError),
+        ("seek", (0, -1), FileSystemError),
+        ("read", (0, -1), FileSystemError),
+        ("truncate", ("file", -1), FileSystemError),
+        ("link", ("file", "file"), FileSystemError),
+        ("unlink", ("missing",), FileSystemError),
     ],
 )
-def test_errors_preserve_state(opened_file, method, args):
+def test_errors_preserve_state(opened_file, method, args, error_type):
     k, number, fd = opened_file
-    with pytest.raises(FileSystemError):
+    with pytest.raises(error_type):
         getattr(k, method)(*args)
     assert k.ls() == [("file", number)]
     assert k.stat("file")["links"] == 1
