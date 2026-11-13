@@ -2,7 +2,7 @@
 HELP_TEXT = """create name             create a file
 stat name               show inode information (stat / for the root directory)
 ls                      list names and inode numbers
-open name               open a file; print the smallest available fd
+open name               open a file; print file descriptor
 close fd                close a file descriptor
 seek fd offset          set the absolute offset in bytes
 read fd size            read bytes (displayed as Python bytes)
@@ -12,5 +12,5 @@ unlink name             remove a file name
 truncate name size      set the file size in bytes
 help                    show this help message
 exit                    exit (in-memory data will be lost)
-Quote names and text containing spaces. Comments start with #.
+Quote names and text containing spaces.
 """

@@ -1,5 +1,4 @@
 # kernel.py
-"""Kernel subsystem: open files, offsets, and inode lifetime."""
 
 from dataclasses import dataclass
 

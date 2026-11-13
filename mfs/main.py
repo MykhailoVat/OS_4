@@ -1,5 +1,4 @@
 # main.py
-"""Interactive filesystem shell."""
 
 import json
 import shlex
@@ -30,7 +29,7 @@ def execute(kernel: Kernel, line: str) -> bool:
     elif command == "create":
         print(f"inode={kernel.create(args[0])}")
     elif command == "stat":
-        print(json.dumps(kernel.stat(args[0]), ensure_ascii=False))
+        print(json.dumps(kernel.stat(args[0]), ensure_ascii=False, indent=4))
     elif command == "ls":
         entries = kernel.ls()
         print("\n".join(f"{number}\t{name!r}" for name, number in entries) or "(empty)")

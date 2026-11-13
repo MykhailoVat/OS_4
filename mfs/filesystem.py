@@ -1,5 +1,4 @@
 # filesystem.py
-"""In-memory filesystem driver without a bitmap."""
 
 from dataclasses import dataclass, field
 
@@ -25,7 +24,7 @@ class Inode:
 
 
 class MemoryFileSystem:
-    """The data itself is the storage medium, not a cache of another device.
+    """ In-memory filesytem
 
     The root directory has inode 0. Its entries are stored in a dictionary;
     deleting an entry removes the corresponding hard link entirely.
