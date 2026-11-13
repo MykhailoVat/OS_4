@@ -25,10 +25,9 @@ class Inode:
 
 
 class MemoryFileSystem:
-    """ In-memory filesystem
-
-    The root directory has inode 0. Its entries are stored in a dictionary;
-    deleting an entry removes the corresponding hard link entirely.
+    """
+    In-memory filesystem
+    The root directory has inode 0.
     """
 
     def __init__(self) -> None:
