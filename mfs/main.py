@@ -43,7 +43,7 @@ def execute(kernel: Kernel, line: str) -> bool:
         kernel.seek(int(args[0]), int(args[1]))
         print("OK")
     elif command == "read":
-        print(repr(kernel.read(int(args[0]), int(args[1]))))
+        print(kernel.read(int(args[0]), int(args[1])))
     elif command == "write":
         fd = int(args[0])
         size = int(args[1])

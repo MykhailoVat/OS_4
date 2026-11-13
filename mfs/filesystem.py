@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass, field
 
-BLOCK_SIZE = 16
+BLOCK_SIZE = 8
 MAX_NAME_BYTES = 15
 
 class FileSystemError(Exception):
